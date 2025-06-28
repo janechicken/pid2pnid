@@ -6,7 +6,7 @@ on:
       - 'v*'  # Trigger on version tags (e.g., v1.0.0)
 jobs:
   build:
-    name: Release - ${{ matrix.os }}
+    name: Build - ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest]
@@ -16,9 +16,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Build
         run: cargo build --release
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            target/release/pid2pnid-pretendo
-            target/release/pid2pnid-pretendo.exe
+      - uses: actions/upload-artifact@v4
+        name: Upload artifacts
+          target/release/pid2pnid-pretendo*
+          !target/release/pid2pnid-pretendo.d
+        
