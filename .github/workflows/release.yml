@@ -1,3 +1,9 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (e.g., v1.0.0)
 jobs:
   release:
     name: Release - ${{ matrix.platform.os_name }}
