@@ -1,3 +1,10 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags (e.g., v1.0.0)
+
 jobs:
   release:
     name: Release - ${{ matrix.platform.os-name }}
@@ -7,33 +14,43 @@ jobs:
           - os-name: FreeBSD-x86_64
             runs-on: ubuntu-24.04
             target: x86_64-unknown-freebsd
+            artifact-name: pretendo-pid-analyzer-freebsd
 
           - os-name: Linux-x86_64
             runs-on: ubuntu-24.04
             target: x86_64-unknown-linux-musl
+            artifact-name: pretendo-pid-analyzer-linux
 
           - os-name: Linux-aarch64
             runs-on: ubuntu-24.04
             target: aarch64-unknown-linux-musl
+            artifact-name: pretendo-pid-analyzer-linux-arm64
 
           - os-name: Linux-riscv64
             runs-on: ubuntu-24.04
             target: riscv64gc-unknown-linux-gnu
+            artifact-name: pretendo-pid-analyzer-linux-riscv64
 
           - os-name: Windows-x86_64
             runs-on: windows-latest
             target: x86_64-pc-windows-msvc
+            artifact-name: pretendo-pid-analyzer-windows.exe
 
           - os-name: macOS-x86_64
-            runs-on: macOS-latest
+            runs-on: macos-latest
             target: x86_64-apple-darwin
-
-          # more targets here ...
+            artifact-name: pretendo-pid-analyzer-macos
 
     runs-on: ${{ matrix.platform.runs-on }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools gcc-aarch64-linux-gnu gcc-riscv64-linux-gnu
+
       - name: Build binary
         uses: houseabsolute/actions-rust-cross@v1
         with:
@@ -41,8 +58,29 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: "--locked --release"
           strip: true
-      - name: Publish artifacts and release
-        uses: houseabsolute/actions-rust-release@v0
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          executable-name: ubi
-          target: ${{ matrix.platform.target }}
+          name: ${{ matrix.platform.artifact-name }}
+          path: target/${{ matrix.platform.target }}/release/pretendo-pid-analyzer${{ matrix.platform.os-name == 'Windows-x86_64' && '.exe' || '' }}
+
+  create-release:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/pretendo-pid-analyzer-freebsd
+            artifacts/pretendo-pid-analyzer-linux
+            artifacts/pretendo-pid-analyzer-linux-arm64
+            artifacts/pretendo-pid-analyzer-linux-riscv64
+            artifacts/pretendo-pid-analyzer-windows.exe
+            artifacts/pretendo-pid-analyzer-macos
