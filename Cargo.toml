@@ -1,7 +1,7 @@
 [package]
 name = "pid2pnid-pretendo"
 version = "1.0.0"
-edition = "2025"
+edition = "2021"
 
 [dependencies]
 reqwest = { version = "0.11", default-features = false, features = ["json", "blocking", "rustls-tls"] }
